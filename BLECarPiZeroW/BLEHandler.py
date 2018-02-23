@@ -66,6 +66,7 @@ class IpDiscoveryService(Service):
         Service.__init__(self, bus, index, self.IPDSC_SVC_UUID, True)
         self.add_characteristic(LanIpCharacteristic(bus, 0, self))
 
+
 class MovementService(Service):
     MVMT_SVC_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b'
 
@@ -79,13 +80,20 @@ class BLEApplication(Application):
     def __init__(self, bus):
         Application.__init__(self, bus)
         self.add_service(MovementService(bus, 0))
+        self.add_service(IpDiscoveryService(bus, 1))
+
+
+class IPAdvertisement(Advertisement):
+    def __init__(self, bus, index):
+        Advertisement.__init__(self, bus, index, 'peripheral')
+        self.add_service_uuid(IpDiscoveryService.IPDSC_SVC_UUID)
+        self.include_tx_power = True
 
 
 class BLEAdvertisement(Advertisement):
     def __init__(self, bus, index):
         Advertisement.__init__(self, bus, index, 'peripheral')
         self.add_service_uuid(MovementService.MVMT_SVC_UUID)
-        self.add_service_uuid(IpDiscoveryService.IPDSC_SVC_UUID)
         self.include_tx_power = True
 
 
@@ -138,6 +146,7 @@ def main():
 
     # Create advertisement
     test_advertisement = BLEAdvertisement(bus, 0)
+    ip_advertisement = IPAdvertisement(bus, 1)
 
     mainloop = GObject.MainLoop()
 
@@ -148,6 +157,11 @@ def main():
 
     # Register advertisement
     ad_manager.RegisterAdvertisement(test_advertisement.get_path(), {},
+                                     reply_handler=register_ad_cb,
+                                     error_handler=register_ad_error_cb)
+
+    # Register advertisement for IP Service
+    ad_manager.RegisterAdvertisement(ip_advertisement.get_path(), {},
                                      reply_handler=register_ad_cb,
                                      error_handler=register_ad_error_cb)
 
